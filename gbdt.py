@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error
 from cart_learner import CARTLearner
 
 """
@@ -38,12 +40,19 @@ class GBDT:
             weak_predictions = weak_model.test(x)
             self.gdbt_predictions -= self.learning_rate * weak_predictions
 
-    def test(self, x):
+    def test(self, x, y=None, return_errors=False):
         
+        errors = []
         predictions = np.array([0 for _ in range(len(x))], dtype='float64')
-        for weak_model in self.gdbt_model:
+        for i, weak_model in enumerate(self.gdbt_model):
+            print(f'Model Number: {i}')
             weak_predictions = weak_model.test(x)
             predictions -= self.learning_rate * weak_predictions
+            if y is not None:
+                errors.append(mean_squared_error(y, predictions, squared=False))
         
+        if return_errors:
+            return predictions, errors
+
         return predictions
 
