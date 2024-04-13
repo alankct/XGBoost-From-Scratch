@@ -12,6 +12,7 @@ class GBDT:
         self.max_depth = max_depth
         self.gdbt_model = []
         self.gdbt_predictions = None      # To test training progress
+        self.learning_rate = .1
 
     def train(self, x, y):
         """
@@ -22,35 +23,27 @@ class GBDT:
         """
 
         self.gdbt_predictions = np.zeros_like(y) # GBDT model is initially empty.
-        print(y[:5])
-        print('---------------------------------')
 
         for _ in range(self.trees):
 
             # Error of the strong model
             error = self.gdbt_predictions - y
 
-            # The weak model is a decision tree (CART right now wo/ pruning and a specific max depth)
+            # The weak model is a decision tree (CART right now and a specific max depth)
             weak_model = CARTLearner(max_depth=self.max_depth)
             weak_model.train(x, error)
 
             self.gdbt_model.append(weak_model)
 
-            weak_predictions = weak_model.test(x)   #[:,0]?
-
-            print(self.gdbt_predictions[:5])
-            print(weak_predictions[:5])
-            self.gdbt_predictions -= weak_predictions
-            print('---------------------------------')
+            weak_predictions = weak_model.test(x)
+            self.gdbt_predictions -= self.learning_rate * weak_predictions
 
     def test(self, x):
-
-        """ FIX THIS """
         
-        predictions = np.zeros_like(x[0, :])
-        print(x.shape, len(x[0,:]), len(predictions))
+        predictions = np.array([0 for _ in range(len(x))], dtype='float64')
         for weak_model in self.gdbt_model:
-            predictions += weak_model.test(x)
+            weak_predictions = weak_model.test(x)
+            predictions -= self.learning_rate * weak_predictions
         
         return predictions
 

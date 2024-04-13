@@ -8,14 +8,14 @@ Testing function—can test the error for GBDT/XGBOOST like this
 """
 
 # Load the csv file and remove the header row and date column.
-for filename in ['3_groups', 'Istanbul', 'ripple', 'winequality-red', 'winequality-white']:
+for filename in ['3_groups', 'ripple', 'winequality-red', 'winequality-white']:
     print('---------------------------------')
-    data = np.genfromtxt(f"tree_data/{filename}.csv", delimiter=",")[1:,1:]
+    data = np.genfromtxt(f"tree_data/{filename}.csv", delimiter=",")
 
     # Shuffle the rows and partition some data for testing.
     x_train, x_test, y_train, y_test = train_test_split(data[:,:-1], data[:,-1], test_size=0.4)
 
-    for leaf_size in [1, 50]:
+    for leaf_size in [20]:
         # Construct our learner.
         lrn = CARTLearner(leaf_size=leaf_size)
         lrn.train(x_train, y_train)

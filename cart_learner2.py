@@ -1,27 +1,22 @@
 import numpy as np
 import pandas as pd
 
-"""
-Simple model, same as before (I added a depth parameter for class and reset for train)
-"""
-
 class Node:
     def __init__(self, val=0, feature=None, left=None, right=None):
         self.val = val
         self.feature = feature
         self.left = left
         self.right = right
-
+    
     def __str__(self):
-        return f'Node val {self.val}, split feature: {self.feature}, right: {self.right is not None}, left {self.left is not None}'
+        return f'Value: {self.val}, Feature: {self.feature}, L: [{self.left is not None}], R: [{self.right is not None}]'
 
 class CARTLearner:
 
-    def __init__(self, leaf_size=1, max_depth=float('inf')):
+    def __init__(self, leaf_size=1):
         # set up your object
         self.root = None
         self.leaf_size = leaf_size
-        self.max_depth = max_depth
     
     def find_split_feature(self, x, y):
         best_feature, best_correlation = None, -float("inf")
@@ -35,7 +30,7 @@ class CARTLearner:
                     best_feature, best_correlation = i, correlation
         return best_feature
 
-    def train(self, x, y, depth=0, reset=True):
+    def train(self, x, y):
         """
             Induce a decision tree based on this training data
                 @params:
@@ -45,10 +40,9 @@ class CARTLearner:
         if np.all(y == y[0]):
             # All y values are the same, returns a leaf with that value
             return Node(y[0])
-        if np.all(x==x[0,:]) or len(y) <= self.leaf_size or depth >= self.max_depth:
-            # If all X values are the same or if we reach a small leaf sub-set or if we go past max_depth: return a leaf
+        if np.all(x==x[0,:]) or len(y) <= self.leaf_size:
+            # np.all(x == x[0, 0]) or If it is not possible to split (all X values same), or if we reach a small sub-set, return a leaf
             return Node(np.mean(y))
-
 
         # Determine best x-value (feature) to split on
         feature_index = self.find_split_feature(x, y)
@@ -59,18 +53,18 @@ class CARTLearner:
         left_x, right_x = x[less_than_median], x[~less_than_median]
         left_y, right_y = y[less_than_median], y[~less_than_median]
 
-        if len(x) == max(len(left_x), len(right_x)):
+        if len(x) == len(left_x) or len(x) == len(right_x):
             # The median did not split the arrays, so we return a leaf
             return Node(np.mean(y))
 
         # Create a decision node
         node = Node(median, feature=feature_index)
-        if not self.root or reset:
+        if not self.root:
             self.root = node
 
         # Build left & right sub-trees
-        node.left = self.train(left_x, left_y, depth=depth+1, reset=False)
-        node.right = self.train(right_x, right_y, depth=depth+1, reset=False)
+        node.left = self.train(left_x, left_y)
+        node.right = self.train(right_x, right_y)
         
         return node
 
@@ -82,25 +76,19 @@ class CARTLearner:
         predictions = []
         
         def dfs(curr, row):
-            try:
-                if curr.feature == None:
-                    # Found a leaf
-                    predictions.append(curr.val)
-                    return
-                if row[curr.feature] <= curr.val:
-                    dfs(curr.left, row)
-                else:
-                    dfs(curr.right, row)
-            except Exception as e:
-                print(e)
-                print(f'Predictions so far: {predictions}')
-                print(f'Root: {self.root}')
-
+            if curr.feature == None:
+                # Found a leaf
+                predictions.append(curr.val)
+                return
+            if row[curr.feature] <= curr.val:
+                dfs(curr.left, row)
+            else:
+                dfs(curr.right, row)
 
         for row in x:
             dfs(self.root, row)
 
-        return np.array(predictions)
+        return predictions
 
 
 
