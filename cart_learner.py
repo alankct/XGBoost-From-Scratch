@@ -18,7 +18,6 @@ class Node:
 class CARTLearner:
 
     def __init__(self, leaf_size=1, max_depth=float('inf')):
-        # set up your object
         self.root = None
         self.leaf_size = leaf_size
         self.max_depth = max_depth
@@ -95,7 +94,6 @@ class CARTLearner:
                 print(e)
                 print(f'Predictions so far: {predictions}')
                 print(f'Root: {self.root}')
-
 
         for row in x:
             dfs(self.root, row)

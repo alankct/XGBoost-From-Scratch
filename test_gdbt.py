@@ -19,7 +19,7 @@ if __name__ == '__main__':
 
         for max_depth in [3,6,9]:
             # Construct our learner.
-            lrn = GBDT(trees=100, max_depth=max_depth)
+            lrn = GBDT(trees=100, max_depth=max_depth, learning_rate=0.1)
             lrn.train(x_train, y_train)
             y_pred = lrn.test(x_test)
 

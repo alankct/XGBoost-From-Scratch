@@ -9,12 +9,12 @@ Gradient Boosted Decision Tree
 
 class GBDT:
 
-    def __init__(self, trees=10, max_depth=10):
+    def __init__(self, trees=10, max_depth=10, learning_rate=0.1):
         self.trees = trees
         self.max_depth = max_depth
         self.gdbt_model = []
         self.gdbt_predictions = None      # To test training progress
-        self.learning_rate = .1
+        self.learning_rate = learning_rate
 
     def train(self, x, y):
         """
@@ -44,8 +44,7 @@ class GBDT:
         
         errors = []
         predictions = np.array([0 for _ in range(len(x))], dtype='float64')
-        for i, weak_model in enumerate(self.gdbt_model):
-            #print(f'Model Number: {i}')
+        for weak_model in self.gdbt_model:
             weak_predictions = weak_model.test(x)
             predictions -= self.learning_rate * weak_predictions
             if y is not None:
