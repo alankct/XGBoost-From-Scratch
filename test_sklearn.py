@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
-from gbdt import GBDT
+from sklearn.ensemble import GradientBoostingRegressor
 
 """
 Testing function—can test the error for GBDT/XGBOOST like this
@@ -19,17 +19,19 @@ if __name__ == '__main__':
 
         for max_depth in [3,6,9]:
             # Construct our learner.
-            lrn = GBDT(trees=100, max_depth=max_depth)
-            lrn.train(x_train, y_train)
-            y_pred = lrn.test(x_test)
-
+            lrn = GradientBoostingRegressor(max_depth=max_depth, learning_rate=.1, n_estimators=100)
+            lrn.fit(x_train, y_train)
+            y_pred = lrn.predict(x_train)
+            
             # Test in-sample.
-            y_pred, is_errors = lrn.test(x_train, y=y_train, return_errors=True)
+
+            #y_pred, is_errors = lrn.test(x_train, y=y_train, return_errors=True)
             rmse_is = mean_squared_error(y_train, y_pred, squared=False)
             corr_is = np.corrcoef(y_train, y_pred)[0,1]
 
             # Test out-of-sample.
-            y_pred, os_errors= lrn.test(x_test, y=y_test, return_errors=True)
+            y_pred = lrn.predict(x_test)
+            #y_pred, os_errors= lrn.test(x_test, y=y_test, return_errors=True)
             rmse_oos = mean_squared_error(y_test, y_pred, squared=False)
             corr_oos = np.corrcoef(y_test, y_pred)[0,1]
 

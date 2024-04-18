@@ -45,7 +45,7 @@ class GBDT:
         errors = []
         predictions = np.array([0 for _ in range(len(x))], dtype='float64')
         for i, weak_model in enumerate(self.gdbt_model):
-            print(f'Model Number: {i}')
+            #print(f'Model Number: {i}')
             weak_predictions = weak_model.test(x)
             predictions -= self.learning_rate * weak_predictions
             if y is not None:
