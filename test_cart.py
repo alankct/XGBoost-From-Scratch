@@ -15,7 +15,7 @@ for filename in ['3_groups', 'ripple', 'winequality-red', 'winequality-white']:
     # Shuffle the rows and partition some data for testing.
     x_train, x_test, y_train, y_test = train_test_split(data[:,:-1], data[:,-1], test_size=0.4)
 
-    for leaf_size in [20]:
+    for leaf_size in [1, 20]:
         # Construct our learner.
         lrn = CARTLearner(leaf_size=leaf_size)
         lrn.train(x_train, y_train)

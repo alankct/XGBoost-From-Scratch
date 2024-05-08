@@ -12,7 +12,7 @@ if __name__ == '__main__':
     # Load the csv file and remove the header row and date column. '3_groups', 'Istanbul', 'ripple', 
     for filename in ['winequality-red', 'winequality-white']:
         print('---------------------------------')
-        data = np.genfromtxt(f"tree_data/{filename}.csv", delimiter=",")[1:,1:]
+        data = np.genfromtxt(f"tree_data/{filename}.csv", delimiter=",")
 
         # Shuffle the rows and partition some data for testing.
         x_train, x_test, y_train, y_test = train_test_split(data[:,:-1], data[:,-1], test_size=0.4)
@@ -35,9 +35,8 @@ if __name__ == '__main__':
             rmse_oos = mean_squared_error(y_test, y_pred, squared=False)
             corr_oos = np.corrcoef(y_test, y_pred)[0,1]
 
-            # plt.plot(is_errors, label='In-Sample')
-            # plt.plot(os_errors, label='Out-Of-Sample')
-            # plt.title(f'(In Sample vs Out of Sample) Errors for 100 models, with max_depth {max_depth}')
+            # plt.plot(lrn.oob_score_, label='Out-Of-Sample')
+            # plt.title(f'(In Sample vs Out of Sample) Errors for 1000 models, with max_depth {max_depth}')
             # plt.grid()
             # plt.legend()
             # plt.show()
