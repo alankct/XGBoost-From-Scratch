@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from sklearn.metrics import mean_squared_error
 from cart_learner import CARTLearner
 
@@ -15,18 +16,65 @@ class Node:
         self.right = right
 
 
-class XGBoostTree:
-    def __init__(self, leaf_size=1, max_depth=float('inf'), regularization=0, tree_pruning=0):
-        self.leaf_size, self.max_depth = leaf_size, max_depth
-        self.regularization, self.tree_pruning = regularization, tree_pruning
-        
-    def find_split_feature_and_value(self):
+def find_split_feature_and_value(x, y):
         """
         Calculates leaf similarity scores through different split thresholds
         Calculates gain to evaluate optimal split points
-        (Approximate Greedy Algorithm): Next, we can improve on this^ by using quantiles instead
+        (Approximate Greedy Algorithm): We can improve on this^ by using quantiles instead
         """
-        pass
+        quantiles, lamda = 4, 0              # change to self.quantiles, self.lamda
+        best_feature = None
+        best_split = None
+        best_gain = -1
+
+        df = pd.DataFrame(x)
+        print(df)
+
+        base_ss = sum(y)**2 / (len(y) + lamda)
+
+        for i, col in enumerate(x.T):
+            print(col)
+            _, bins = pd.qcut(col, quantiles, retbins=True, duplicates='drop')
+            # print(quants)
+            print(bins)
+            # print(ss_i)
+            for cut in bins[1:-1]:
+
+                left_mask= col[:] <= cut
+                right_mask = ~left_mask
+                # print(left_mask)
+
+                # print(np.sum(y[left_mask]), len(y[left_mask]))
+                # print(np.sum(y[right_mask]), len(y[right_mask]))
+
+                left_ss = (np.sum(y[left_mask]) ** 2) / (len(y[left_mask]) + lamda)
+                right_ss = (np.sum(y[right_mask]) ** 2) / (len(y[right_mask]) + lamda)
+
+                # print(left_ss, right_ss)
+
+                gain = (left_ss + right_ss) - base_ss
+                # print(gain)
+
+                if gain >= best_gain:
+                    best_gain, best_feature, best_split = gain, i, cut
+            print('---------------')
+        
+        print(best_gain, best_feature, best_split)
+
+x = np.array([[1, 11, 7], [3, 90, 3], [6, 99, 10], [10, 68, 3]])
+y = np.array([3, 9, 9, 5])
+find_split_feature_and_value(x, y)
+
+
+class XGBoostTree:
+    def __init__(self, leaf_size=1, max_depth=float('inf'), lamda=0, tree_pruning=0, quantiles=4):
+        self.leaf_size, self.max_depth = leaf_size, max_depth
+        self.regularization, self.tree_pruning = lamda, tree_pruning  # Regularization and tree pruning params
+        self.quantiles = quantiles
+
+            
+
+
     def train(self, x, y, depth=0, reset=True):
         """Last optimization: random subset of data/features"""
         if np.all(y == y[0]):
