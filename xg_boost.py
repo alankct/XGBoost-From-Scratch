@@ -82,7 +82,7 @@ class XGBoostTree:
         split_feat, split_val = self.find_split_feature_and_value(x, y)
 
         if split_feat == -1 and split_val == -1:        # Prune Tree
-            return None
+            return Node(np.sum(y)/(len(y) + self.lamda))
 
         # Split on the median value for the selected feature
         less_than_val = x[:, split_feat] <= split_val
