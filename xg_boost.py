@@ -6,6 +6,11 @@ from cart_learner import CARTLearner
 
 """
 XGBoost Implementation
+
+Notes:
+    1. XGBoost only uses Approximate Greedy Algorithm, Parallel Learning, and Weighted Quantile Sketch
+        when the training dataset is huge
+    2. 
 """
 class Node:
     def __init__(self, val=0, feature=None, left=None, right=None):

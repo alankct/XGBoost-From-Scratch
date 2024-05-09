@@ -24,7 +24,7 @@ if __name__ == '__main__':
             for trees in [100]:
                 
                 # Construct our learner.
-                lrn = XGBoost(trees=trees, max_depth=max_depth, learning_rate=0.1, regularization=0, tree_pruning=0)
+                lrn = XGBoost(trees=trees, max_depth=max_depth, learning_rate=0.1, lamda=0, gamma=0)
                 lrn.train(x_train, y_train)
                 y_pred = lrn.test(x_test)
 
@@ -54,6 +54,8 @@ if __name__ == '__main__':
 
 """
 Problems:
+
+    0. Fix None Tree Prediction
     1. Too costly of an operation (quantiles every time)
     2. Less trees? Less Max Depth? Play around with hyper-parameters
     3. Play around with the lamda/gamma values (does outputing a Null node work?)
