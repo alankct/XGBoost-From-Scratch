@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
 
         for max_depth in range(3, 7):
-            fig, ax = plt.subplots()
+            # fig, ax = plt.subplots()
             for trees in range(20, 101, 20):
                 
                 # Construct our learner.
@@ -50,7 +50,7 @@ if __name__ == '__main__':
                 plt.title(f'(In Sample vs Out of Sample) Errors for {trees} models, with max_depth {max_depth}')
                 plt.grid()
                 plt.legend()
-                plt.pause(0.01)
+                plt.pause(0.1)
 
                 # Print summary.
                 print(f'Testing {filename}.csv for 100 number of {trees} and {max_depth} Max Depth')
