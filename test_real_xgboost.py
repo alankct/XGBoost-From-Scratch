@@ -52,7 +52,7 @@ for filename in ['ARE', 'ARG', 'BGD', 'BIH', 'BRA', 'BWA', 'CHN', 'CIV', 'COL', 
     data[:,-1] = data[:,-1]/np.roll(data[:,-1], WINDOW) - 1
     x_train, x_test, y_train, y_test = train_test_split(data[WINDOW-1:,:-1], data[WINDOW-1:,-1], test_size=0.4, shuffle=False)
     learning_rate = best_lr[filename]
-    bst = XGBRegressor(n_estimators=1000, max_depth=4, learning_rate=learning_rate)
+    bst = XGBRegressor(n_estimators=100, max_depth=4, learning_rate=learning_rate)
     bst.fit(x_train, y_train)
     y_pred = bst.predict(x_train)
     rmse_is = mean_squared_error(y_train, y_pred, squared=False)
