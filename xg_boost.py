@@ -13,17 +13,20 @@ Notes:
     2. 
 """
 class Node:
-    def __init__(self, val=0, feature=None, left=None, right=None):
+    def __init__(self, val=0, feature=None, left=None, right=None, sparse_dir=None):
         # (Approximate Greedy Algorithm): feature is a conditional boolean (multiple thresholds rather than just one feature)?
         self.val = val
         self.feature = feature
         self.left = left
         self.right = right
+        self.sparse_dir = sparse_dir
         # self.consumed_nodes = consumed_nodes
+    def __str__(self):
+        return f'Feature: {self.feature} Val: {self.val} Sparse Dir {self.sparse_dir != None}'
 
 
 class XGBoostTree:
-    def __init__(self, leaf_size=1, max_depth=float('inf'), lamda=0, gamma=0, quantiles=4):
+    def __init__(self, leaf_size=1, max_depth=float('inf'), lamda=0, gamma=0, quantiles=4, sparsity_aware=False):
         self.leaf_size, self.max_depth = leaf_size, max_depth
         # Regularization (lamda) and tree pruning (gamma) params
         # When lamda > 0, it is easier to prune trees because the values for gain are smaller
@@ -31,8 +34,9 @@ class XGBoostTree:
         self.lamda, self.gamma = lamda, gamma
         self.quantiles = quantiles
         self.root = None
+        self.sparsity_aware = sparsity_aware
 
-    def find_split_feature_and_value(self, x, y):
+    def find_split_feature_and_value(self, x, y, sparsity_aware=False):
         """
         Calculates leaf similarity scores through different split thresholds
         Calculates gain to evaluate optimal split points
@@ -43,6 +47,7 @@ class XGBoostTree:
         best_feature = None
         best_split = None
         best_gain = -1
+        sparse_dir = -1
 
         # df = pd.DataFrame(x)
         # print(df)
@@ -50,13 +55,33 @@ class XGBoostTree:
         base_ss = sum(y)**2 / (len(y) + self.lamda)
 
         for i, col in enumerate(x.T):
-            _, bins = pd.qcut(col, self.quantiles, retbins=True, duplicates='drop')
+            if sparsity_aware:
+                missing_values = col[:] == 0
+                col1 = col[~missing_values]
+                # col2 = col[missing_values]      # Missing values x
+                y1 = y[~missing_values]
+                y2 = y[missing_values]          # Missing values y
+                _, bins = pd.qcut(col1, self.quantiles, retbins=True, duplicates='drop')
+            else:
+                _, bins = pd.qcut(col, self.quantiles, retbins=True, duplicates='drop')
             for cut in bins[1:-1]:
-                left_mask= col[:] <= cut
-                right_mask = ~left_mask
-                left_ss = (np.sum(y[left_mask]) ** 2) / (len(y[left_mask]) + self.lamda)
-                right_ss = (np.sum(y[right_mask]) ** 2) / (len(y[right_mask]) + self.lamda)
-                gain = (left_ss + right_ss) - base_ss
+                if sparsity_aware:
+                    left_mask= col1[:] <= cut
+                    right_mask = ~left_mask
+                    gain1 = (np.sum(y1[left_mask]) + np.sum(y2))**2 / (len(y1[left_mask]) + len(y2) + self.lamda)
+                    gain2 = (np.sum(y1[right_mask]) + np.sum(y2))**2 / (len(y1[right_mask])+ len(y2) + self.lamda)
+                    if gain1 >= gain2:
+                        gain = gain1
+                        sparse_dir = 0  # 'Left'
+                    else:
+                        gain = gain2
+                        sparse_dir = 1  # 'Right'
+                else:
+                    left_mask= col[:] <= cut
+                    right_mask = ~left_mask
+                    left_ss = (np.sum(y[left_mask]) ** 2) / (len(y[left_mask]) + self.lamda)
+                    right_ss = (np.sum(y[right_mask]) ** 2) / (len(y[right_mask]) + self.lamda)
+                    gain = (left_ss + right_ss) - base_ss
 
                 if gain >= best_gain:
                     best_gain, best_feature, best_split = gain, i, cut
@@ -64,11 +89,11 @@ class XGBoostTree:
         # print(best_gain, best_feature, best_split)
 
         if best_gain - self.gamma < 0:
-            return -1, -1   # Tree pruning: we will not create this branch
+            return -1, -1, -1   # Tree pruning: we will not create this branch
         
-        return best_feature, best_split
+        return best_feature, best_split, sparse_dir
 
-    def train(self, x, y, depth=0, reset=True):
+    def train(self, x, y, depth=0, reset=True, sparsity_aware=False):
         """Last optimization: random subset of data/features"""
         if np.all(y == y[0]) or np.all(x==x[0,:]) or len(y) <= self.leaf_size or depth >= self.max_depth:
             # If all y values are the same OR
@@ -79,7 +104,7 @@ class XGBoostTree:
 
 
         # Determine best x-value (feature) and its value to split on
-        split_feat, split_val = self.find_split_feature_and_value(x, y)
+        split_feat, split_val, sparse_dir = self.find_split_feature_and_value(x, y, sparsity_aware=sparsity_aware)
 
         if split_feat == -1 and split_val == -1:        # Prune Tree
             return Node(np.sum(y)/(len(y) + self.lamda))
@@ -94,13 +119,17 @@ class XGBoostTree:
             return Node(np.sum(y)/(len(y) + self.lamda))
 
         # Create a decision node
-        node = Node(split_val, feature=split_feat)
+        node = Node(split_val, feature=split_feat, sparse_dir=sparse_dir)
         if not self.root or reset:
             self.root = node
 
         # Build left & right sub-trees
         node.left = self.train(left_x, left_y, depth=depth+1, reset=False)
         node.right = self.train(right_x, right_y, depth=depth+1, reset=False)
+        # if sparse_dir == 0:
+        #     node.sparse_dir = node.left
+        # elif sparse_dir == 1:
+        #     node.sparse_dir = node.right
         
         return node
     
@@ -112,16 +141,21 @@ class XGBoostTree:
         predictions = []
         
         def dfs(curr, row):
+            # print(curr, row)
             if curr.feature == None:
                 # Found a leaf
                 predictions.append(curr.val)
                 return
+            if row[curr.feature] == 0 and curr.sparse_dir != None:
+                if curr.sparse_dir == 0: dfs(curr.left, row)
+                if curr.sparse_dir == 1: dfs(curr.right, row)
             if row[curr.feature] <= curr.val:
                 dfs(curr.left, row)
             else:
                 dfs(curr.right, row)
 
         for row in x:
+            # print(self.root)
             dfs(self.root, row)
 
         return np.array(predictions)
@@ -129,13 +163,14 @@ class XGBoostTree:
 
 class XGBoost:
 
-    def __init__(self, trees=10, quantiles=4, max_depth=10, learning_rate=0.1, lamda=0, gamma=0):
+    def __init__(self, trees=10, quantiles=4, max_depth=10, learning_rate=0.1, lamda=0, gamma=0, sparsity_aware=False):
         self.trees = trees
         self.max_depth = max_depth
         self.quantiles = quantiles
         self.gdbt_model = []
         self.gdbt_predictions = None
         self.learning_rate, self.lamda, self.gamma = learning_rate, lamda, gamma
+        self.sparsity_aware = sparsity_aware
 
     def train(self, x, y):
         """
@@ -154,7 +189,7 @@ class XGBoost:
             error = self.gdbt_predictions - y
 
             # The weak model is a decision tree (weak XGBoost Tree)
-            weak_model = XGBoostTree(leaf_size=1, max_depth=self.max_depth, lamda=self.lamda, gamma=self.gamma, quantiles=self.quantiles)
+            weak_model = XGBoostTree(leaf_size=1, max_depth=self.max_depth, lamda=self.lamda, gamma=self.gamma, quantiles=self.quantiles, sparsity_aware=self.sparsity_aware)
             weak_model.train(x, error)
 
             self.gdbt_model.append(weak_model)
