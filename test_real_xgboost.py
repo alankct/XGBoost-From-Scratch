@@ -42,6 +42,7 @@ best_lr = {'ARE': 0.2, 'ARG': 0.0001, 'BGD': 0.01, 'BIH': 0.1, 'BRA': 0.001, 'BW
 
 
 corrs = {}
+corrs_oos = []
 for filename in ['ARE', 'ARG', 'BGD', 'BIH', 'BRA', 'BWA', 'CHN', 'CIV', 'COL', 'CZE', 'EGY', 'EST', 'GHA', 'HRV', 'HUN'
                  , 'IDN', 'IND', 'JAM', 'JOR', 'KAZ', 'KEN', 'LKA', 'MAR', 'MEX', 'NGA', 'PAK', 'PER', 'PHL', 'SEN', 'SRB',
                  'SVN', 'THA', 'TTO', 'TUN', 'UKR', 'VNM', 'ZAF', 'ZWE']:
@@ -66,6 +67,7 @@ for filename in ['ARE', 'ARG', 'BGD', 'BIH', 'BRA', 'BWA', 'CHN', 'CIV', 'COL', 
     print (f"Out of sample, RMSE: {rmse_oos}, Corr: {corr_oos}")
 
     corrs[filename] = (corr_is, corr_oos)
+    corrs_oos.append(abs(corr_oos))
     
     # # For picking best LR
     # best_lr_oos = 0
@@ -90,3 +92,4 @@ for filename in ['ARE', 'ARG', 'BGD', 'BIH', 'BRA', 'BWA', 'CHN', 'CIV', 'COL', 
     # best_lr[filename] = best_lr_oos
 # print(best_lr)
 print(corrs)
+print(np.mean(corrs_oos))
