@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
-from cart_learner import CARTLearner
+from Models.cart_learner import CARTLearner
 
 """
 Gradient Boosted Decision Tree
