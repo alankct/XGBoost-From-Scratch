@@ -38,12 +38,14 @@ WINDOW = 12
 #            'NGA': 0.001, 'PAK': 0.01, 'PER': 0.0001, 'PHL': 0.2, 'SEN': 0.3, 'SRB': 0.3, 'SVN': 0.001, 'THA': 0.0001, 
 #            'TTO': 0.001, 'TUN': 0.3, 'UKR': 0.1, 'VNM': 0.01, 'ZAF': 0.001, 'ZWE': 0.001}
 
+#Calculated best learning rates
 best_lr = {'ARE': 0.2, 'ARG': 0.0001, 'BGD': 0.01, 'BIH': 0.1, 'BRA': 0.001, 'BWA': 0.0001, 'CHN': 0.001, 
            'COL': 0.0001, 'CZE': 0.0001, 'EGY': 0.2, 'EST': 0.0001, 'GHA': 0.001, 'HRV': 0.01, 'HUN': 0.3, 'IDN': 0.3, 
            'IND': 0.1, 'JAM': 0.01, 'JOR': 0.1, 'KAZ': 0.0001, 'KEN': 0.0001, 'LKA': 0.001, 'MAR': 0.01, 'MEX': 0.0001, 
            'NGA': 0.01, 'PAK': 0.0001, 'PER': 0.3, 'PHL': 0.0001, 'SEN': 0.01, 'SRB': 0.1, 'SVN': 0.3, 'THA': 0.2, 
            'TTO': 0.0001, 'TUN': 0.01, 'UKR': 0.3, 'VNM': 0.01, 'ZAF': 0.0001, 'ZWE': 0.01}
 
+#List of countries
 countries = ['ARE', 'ARG', 'BGD', 'BIH', 'BRA', 'BWA', 'CHN', 'COL', 'CZE', 'EGY', 'EST', 'GHA', 'HRV', 'HUN'
                  , 'IDN', 'IND', 'JAM', 'JOR', 'KAZ', 'KEN', 'LKA', 'MAR', 'MEX', 'NGA', 'PAK', 'PER', 'PHL', 'SEN', 'SRB',
                  'SVN', 'THA', 'TTO', 'TUN', 'UKR', 'VNM', 'ZAF', 'ZWE']
@@ -60,10 +62,15 @@ is_difference = []
 for filename in countries:
     print('---------------------------------')
     print(filename)
+    
+    #Cleaning data and calculating year to date returns
     data = np.genfromtxt(f"Data/{filename}.csv", delimiter=",", usecols=np.arange(3, 18), skip_header=True)
     data[:,-1] = data[:,-1]/np.roll(data[:,-1], WINDOW) - 1
     x_train, x_test, y_train, y_test = train_test_split(data[WINDOW-1:,:-1], data[WINDOW-1:,-1], test_size=0.4, shuffle=False)
+
     learning_rate = best_lr[filename]
+
+    #Testing real XGBoost
     bst = XGBRegressor(n_estimators=100, max_depth=4, learning_rate=learning_rate)
     bst.fit(x_train, y_train)
     y_pred = bst.predict(x_train)
@@ -81,6 +88,7 @@ for filename in countries:
     corrs['In Sample Correlation'].append(abs(corr_is))
     corrs['Out Of Sample Correlation'].append(abs(corr_oos))
 
+    #Testing Implemented XGBoost
     lrn = XGBoost(trees=100, max_depth=4, learning_rate=learning_rate, lamda=1, gamma=0, sparsity_aware=True)
     lrn.train(x_train, y_train)
     y_pred = lrn.test(x_test)
